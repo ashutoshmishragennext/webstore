@@ -1,51 +1,844 @@
-{% from "webshop/templates/includes/macros.html" import attribute_filter_section, field_filter_section, discount_range_filters %}
-{% extends "templates/web.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Products - Enhanced Webshop</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-{% block title %}{{ _("All Products") }}{% endblock %}
-{% block header %}
-<div class="mb-6">{{ _("All Products") }}</div>
-{% endblock header %}
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
 
-{% block page_content %}
-<div class="row">
-	<!-- Items section -->
-	<div id="product-listing" class="col-12 order-2 col-md-9 order-md-2 item-card-group-section">
-		<!-- Rendered via JS -->
-	</div>
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
 
-	<!-- Filters Section -->
-	<div class="col-12 order-1 col-md-3 order-md-1">
-		<div class="collapse d-md-block mr-4 filters-section" id="product-filters">
-			<div class="d-flex justify-content-between align-items-center mb-5 title-section">
-				<div class="mb-4 filters-title" > {{ _('Filters') }} </div>
-				<a class="mb-4 clear-filters" href="/all-products">{{ _('Clear All') }}</a>
-			</div>
-			<!-- field filters -->
-			{% if field_filters %}
-				{{ _(field_filter_section(field_filters)) }}
-			{% endif %}
+        /* Header Styles */
+        .page-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
 
-			<!-- attribute filters -->
-			{% if attribute_filters %}
-				{{ _(attribute_filter_section(attribute_filters)) }}
-			{% endif %}
-		</div>
+        .page-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            margin-bottom: 10px;
+        }
 
-	</div>
-</div>
+        .page-header p {
+            text-align: center;
+            color: #666;
+            font-size: 1.1rem;
+        }
 
-<script>
-	frappe.ready(() => {
-		$('.btn-prev, .btn-next').click((e) => {
-			const $btn = $(e.target);
-			$btn.prop('disabled', true);
-			const start = $btn.data('start');
-			let query_params = frappe.utils.get_query_params();
-			query_params.start = start;
-			let path = window.location.pathname + '?' + frappe.utils.get_url_from_dict(query_params);
-			window.location.href = path;
-		});
-	});
-</script>
+        /* Main Content Layout */
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+            align-items: start;
+        }
 
-{% endblock %}
+        /* Filters Section */
+        .filters-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: sticky;
+            top: 20px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        .filters-section::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .filters-section::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        .filters-section::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 10px;
+        }
+
+        .title-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .filters-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filters-title::before {
+            content: "\f0b0";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            color: #667eea;
+        }
+
+        .clear-filters {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .clear-filters:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Filter Groups */
+        .filter-group {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 15px;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .filter-group h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-group h3::before {
+            content: "\f105";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            color: #667eea;
+            font-size: 0.9rem;
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .filter-option:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateX(5px);
+        }
+
+        .filter-option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+            cursor: pointer;
+        }
+
+        .filter-option label {
+            cursor: pointer;
+            color: #555;
+            font-weight: 500;
+        }
+
+        /* Products Section */
+        .products-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            min-height: 600px;
+        }
+
+        .products-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .products-count {
+            font-size: 1.1rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .sort-options {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .sort-select {
+            padding: 10px 15px;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-radius: 10px;
+            background: white;
+            color: #333;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .sort-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        /* Product Grid */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .product-card {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .product-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: #ccc;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-image::before {
+            content: "\f03e";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 400;
+        }
+
+        .product-info {
+            padding: 20px;
+        }
+
+        .product-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .product-price {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .product-description {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .product-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(102, 126, 234, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .pagination-btn {
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-radius: 10px;
+            color: #667eea;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 400px;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(102, 126, 234, 0.3);
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .filters-section {
+                position: static;
+                max-height: none;
+                order: 2;
+            }
+
+            .products-section {
+                order: 1;
+            }
+
+            .product-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                gap: 20px;
+            }
+
+            .page-header h1 {
+                font-size: 2rem;
+            }
+
+            .products-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+
+            .sort-options {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+
+            .product-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .page-header {
+                padding: 20px;
+            }
+
+            .filters-section,
+            .products-section {
+                padding: 20px;
+            }
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Custom scrollbar for webkit browsers */
+        .products-section::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .products-section::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        .products-section::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="page-header fade-in">
+            <h1>All Products</h1>
+            <p>Discover our amazing collection of products</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Filters Section -->
+            <div class="filters-section fade-in">
+                <div class="title-section">
+                    <div class="filters-title">Filters</div>
+                    <a class="clear-filters" href="/all-products">Clear All</a>
+                </div>
+
+                <!-- Sample Filter Groups -->
+                <div class="filter-group">
+                    <h3>Category</h3>
+                    <div class="filter-option">
+                        <input type="checkbox" id="electronics" name="category" value="electronics">
+                        <label for="electronics">Electronics</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="clothing" name="category" value="clothing">
+                        <label for="clothing">Clothing</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="books" name="category" value="books">
+                        <label for="books">Books</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="home" name="category" value="home">
+                        <label for="home">Home & Garden</label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h3>Price Range</h3>
+                    <div class="filter-option">
+                        <input type="checkbox" id="under-25" name="price" value="under-25">
+                        <label for="under-25">Under $25</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="25-50" name="price" value="25-50">
+                        <label for="25-50">$25 - $50</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="50-100" name="price" value="50-100">
+                        <label for="50-100">$50 - $100</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="over-100" name="price" value="over-100">
+                        <label for="over-100">Over $100</label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h3>Brand</h3>
+                    <div class="filter-option">
+                        <input type="checkbox" id="brand-a" name="brand" value="brand-a">
+                        <label for="brand-a">Brand A</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="brand-b" name="brand" value="brand-b">
+                        <label for="brand-b">Brand B</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="brand-c" name="brand" value="brand-c">
+                        <label for="brand-c">Brand C</label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h3>Rating</h3>
+                    <div class="filter-option">
+                        <input type="checkbox" id="5-star" name="rating" value="5">
+                        <label for="5-star">⭐⭐⭐⭐⭐ (5 stars)</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="4-star" name="rating" value="4">
+                        <label for="4-star">⭐⭐⭐⭐☆ (4+ stars)</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="3-star" name="rating" value="3">
+                        <label for="3-star">⭐⭐⭐☆☆ (3+ stars)</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Section -->
+            <div class="products-section fade-in">
+                <div class="products-header">
+                    <div class="products-count">
+                        <i class="fas fa-box"></i> Showing 1-12 of 234 products
+                    </div>
+                    <div class="sort-options">
+                        <label for="sort">Sort by:</label>
+                        <select id="sort" class="sort-select">
+                            <option value="relevance">Relevance</option>
+                            <option value="price-low">Price: Low to High</option>
+                            <option value="price-high">Price: High to Low</option>
+                            <option value="rating">Customer Rating</option>
+                            <option value="newest">Newest First</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Product Grid -->
+                <div id="product-listing" class="product-grid">
+                    <!-- Sample Products -->
+                    <div class="product-card">
+                        <div class="product-image"></div>
+                        <div class="product-info">
+                            <div class="product-title">Premium Wireless Headphones</div>
+                            <div class="product-price">$79.99</div>
+                            <div class="product-description">High-quality wireless headphones with noise cancellation</div>
+                            <div class="product-actions">
+                                <button class="btn btn-primary">
+                                    <i class="fas fa-shopping-cart"></i> Add to Cart
+                                </button>
+                                <button class="btn btn-secondary">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card">
+                        <div class="product-image"></div>
+                        <div class="product-info">
+                            <div class="product-title">Organic Cotton T-Shirt</div>
+                            <div class="product-price">$24.99</div>
+                            <div class="product-description">Comfortable organic cotton t-shirt in various colors</div>
+                            <div class="product-actions">
+                                <button class="btn btn-primary">
+                                    <i class="fas fa-shopping-cart"></i> Add to Cart
+                                </button>
+                                <button class="btn btn-secondary">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card">
+                        <div class="product-image"></div>
+                        <div class="product-info">
+                            <div class="product-title">Smart Water Bottle</div>
+                            <div class="product-price">$39.99</div>
+                            <div class="product-description">Temperature-controlled smart water bottle with app connectivity</div>
+                            <div class="product-actions">
+                                <button class="btn btn-primary">
+                                    <i class="fas fa-shopping-cart"></i> Add to Cart
+                                </button>
+                                <button class="btn btn-secondary">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card">
+                        <div class="product-image"></div>
+                        <div class="product-info">
+                            <div class="product-title">Bestselling Novel</div>
+                            <div class="product-price">$14.99</div>
+                            <div class="product-description">An engaging story that will keep you turning pages</div>
+                            <div class="product-actions">
+                                <button class="btn btn-primary">
+                                    <i class="fas fa-shopping-cart"></i> Add to Cart
+                                </button>
+                                <button class="btn btn-secondary">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card">
+                        <div class="product-image"></div>
+                        <div class="product-info">
+                            <div class="product-title">Yoga Mat Pro</div>
+                            <div class="product-price">$59.99</div>
+                            <div class="product-description">Professional-grade yoga mat with superior grip and comfort</div>
+                            <div class="product-actions">
+                                <button class="btn btn-primary">
+                                    <i class="fas fa-shopping-cart"></i> Add to Cart
+                                </button>
+                                <button class="btn btn-secondary">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card">
+                        <div class="product-image"></div>
+                        <div class="product-info">
+                            <div class="product-title">Ceramic Coffee Mug</div>
+                            <div class="product-price">$19.99</div>
+                            <div class="product-description">Handcrafted ceramic mug perfect for your morning coffee</div>
+                            <div class="product-actions">
+                                <button class="btn btn-primary">
+                                    <i class="fas fa-shopping-cart"></i> Add to Cart
+                                </button>
+                                <button class="btn btn-secondary">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button class="pagination-btn btn-prev" data-start="0" disabled>
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <div class="pagination-info">Page 1 of 20</div>
+                    <button class="pagination-btn btn-next" data-start="12">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simulate frappe.ready functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Pagination functionality
+            const prevBtn = document.querySelector('.btn-prev');
+            const nextBtn = document.querySelector('.btn-next');
+            
+            if (prevBtn && nextBtn) {
+                [prevBtn, nextBtn].forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        const button = e.target.closest('.pagination-btn');
+                        button.disabled = true;
+                        
+                        // Simulate loading
+                        const originalText = button.innerHTML;
+                        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+                        
+                        setTimeout(() => {
+                            button.innerHTML = originalText;
+                            button.disabled = false;
+                        }, 1000);
+                    });
+                });
+            }
+
+            // Filter functionality
+            const filterInputs = document.querySelectorAll('.filter-option input[type="checkbox"]');
+            filterInputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    // Add visual feedback
+                    const option = this.closest('.filter-option');
+                    if (this.checked) {
+                        option.style.background = 'rgba(102, 126, 234, 0.1)';
+                    } else {
+                        option.style.background = 'transparent';
+                    }
+                    
+                    // Simulate filter application
+                    console.log('Filter applied:', this.name, this.value, this.checked);
+                });
+            });
+
+            // Sort functionality
+            const sortSelect = document.getElementById('sort');
+            if (sortSelect) {
+                sortSelect.addEventListener('change', function() {
+                    console.log('Sort changed to:', this.value);
+                    // Simulate loading
+                    const productGrid = document.getElementById('product-listing');
+                    productGrid.style.opacity = '0.5';
+                    
+                    setTimeout(() => {
+                        productGrid.style.opacity = '1';
+                    }, 500);
+                });
+            }
+
+            // Add to cart functionality
+            const addToCartButtons = document.querySelectorAll('.btn-primary');
+            addToCartButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-check"></i> Added!';
+                    this.style.background = 'linear-gradient(45deg, #4CAF50, #45a049)';
+                    
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.style.background = 'linear-gradient(45deg, #667eea, #764ba2)';
+                    }, 2000);
+                });
+            });
+
+            // Wishlist functionality
+            const wishlistButtons = document.querySelectorAll('.btn-secondary');
+            wishlistButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const icon = this.querySelector('i');
+                    if (icon.classList.contains('fa-heart')) {
+                        icon.classList.remove('fa-heart');
+                        icon.classList.add('fa-heart-crack');
+                        this.style.color = '#e74c3c';
+                    } else {
+                        icon.classList.remove('fa-heart-crack');
+                        icon.classList.add('fa-heart');
+                        this.style.color = '#667eea';
+                    }
+                });
+            });
+
+            // Clear filters functionality
+            const clearFiltersBtn = document.querySelector('.clear-filters');
+            if (clearFiltersBtn) {
+                clearFiltersBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Uncheck all filters
+                    filterInputs.forEach(input => {
+                        input.checked = false;
+                        input.closest('.filter-option').style.background = 'transparent';
+                    });
+                    
+                    // Reset sort
+                    if (sortSelect) {
+                        sortSelect.value = 'relevance';
+                    }
+                    
+                    // Visual feedback
+                    this.innerHTML = '<i class="fas fa-check"></i> Cleared!';
+                    setTimeout(() => {
+                        this.innerHTML = 'Clear All';
+                    }, 1500);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
