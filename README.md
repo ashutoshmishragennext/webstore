@@ -85,4 +85,4 @@ $ git clone https://github.com/frappe/webshop.git
 For more information on using the bench command line interface, please reference this [page](https://github.com/frappe/bench#development).
 
 ## License
-Licensed under the GNU GENERAL PUBLIC LICENSE V3. This is an open-source project meant to help businesses create online commerce platforms. (See [LICENSE](LICENSE) for more information).
+Licensed under the GNU GENERAL PUBLIC LICENSE V3. This is an open-source project meant to help businesses create online commerce platforms. (See [LICENSE](LICENSE) for more information). Hello 
