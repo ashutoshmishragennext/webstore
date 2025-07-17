@@ -23,10 +23,10 @@ webshop.ProductView = class {
 			<div class="banner-container">
 				<div class="banner-slider">
 					<div class="banner-slide active">
-						<img src="/assets/webshop/images/banner1.jpg" alt="Banner 1" class="banner-image">
+						<img src="/assets/webshop/images/pul.jpg" alt="Banner 1" class="banner-image">
 					</div>
 					<div class="banner-slide">
-						<img src="/assets/webshop/images/banner1.jpg" alt="Banner 2" class="banner-image">
+						<img src="/assets/webshop/images/img1.png" alt="Banner 2" class="banner-image">
 					</div>
 					<div class="banner-slide">
 						<img src="/assets/webshop/images/banner1.jpg" alt="Banner 3" class="banner-image">
